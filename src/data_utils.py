@@ -207,10 +207,9 @@ class LibriSpeechDataLoader(CommonDataLoader):
             tf.TensorSpec(shape=(None), dtype=SPEECH_DTYPE),
             tf.TensorSpec(shape=(None), dtype=LABEL_DTYPE),
         )
-        dataset = tf.data.Dataset.from_generator(
+        return tf.data.Dataset.from_generator(
             inputs_generator, output_signature=output_signature
         )
-        return dataset
 
     def __len__(self):
         if self._num_samples is None:
@@ -259,7 +258,7 @@ class LibriSpeechDataLoader(CommonDataLoader):
                     for s in samples
                     if len(s.split()) > 2
                 }
-                all_samples.update(samples)
+                all_samples |= samples
         return all_samples
 
 
@@ -284,8 +283,8 @@ class TimitDataLoader(CommonDataLoader):
         self._fetch_and_push_files(self.data_dir, wav_files, self.wav_ext)
         self._fetch_and_push_files(self.data_dir, txt_files, self.txt_ext)
 
-        wav_files = set([f[:-len(self.wav_ext)] for f in wav_files])
-        txt_files = set([f[:-len(self.txt_ext)] for f in txt_files])
+        wav_files = {f[:-len(self.wav_ext)] for f in wav_files}
+        txt_files = {f[:-len(self.txt_ext)] for f in txt_files}
 
         # consider only those files which has both text & speech
         files = list(wav_files & txt_files)

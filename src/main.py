@@ -99,30 +99,29 @@ class TrainingArgs:
             self.train_tfrecords = tf.io.gfile.glob(DUMMY_DATA_PATH)
             self.test_tfrecords = self.val_tfrecords = self.train_tfrecords
             assert self.from_tfrecords
+        elif self.from_tfrecords:
+            self.train_dir = self.val_dir = self.test_dir = None
+
+            train_tfrecords = [
+                f"{record}*.tfrecord" for record in self.train_tfrecords
+            ]
+            self.train_tfrecords = tf.io.gfile.glob(train_tfrecords)
+
+            val_tfrecords = [f"{record}*.tfrecord" for record in self.val_tfrecords]
+            self.val_tfrecords = tf.io.gfile.glob(val_tfrecords)
+
+            test_tfrecords = [
+                f"{record}*.tfrecord" for record in self.test_tfrecords
+            ]
+            self.test_tfrecords = tf.io.gfile.glob(test_tfrecords)
+
+            assert (
+                len(self.train_tfrecords) > 0
+                and len(self.val_tfrecords) > 0
+                and len(self.test_tfrecords) > 0
+            )
         else:
-            if self.from_tfrecords:
-                self.train_dir = self.val_dir = self.test_dir = None
-
-                train_tfrecords = [
-                    f"{record}*.tfrecord" for record in self.train_tfrecords
-                ]
-                self.train_tfrecords = tf.io.gfile.glob(train_tfrecords)
-
-                val_tfrecords = [f"{record}*.tfrecord" for record in self.val_tfrecords]
-                self.val_tfrecords = tf.io.gfile.glob(val_tfrecords)
-
-                test_tfrecords = [
-                    f"{record}*.tfrecord" for record in self.test_tfrecords
-                ]
-                self.test_tfrecords = tf.io.gfile.glob(test_tfrecords)
-
-                assert (
-                    len(self.train_tfrecords) > 0
-                    and len(self.val_tfrecords) > 0
-                    and len(self.test_tfrecords) > 0
-                )
-            else:
-                self.train_tfrecords = self.val_tfrecords = self.test_tfrecords = None
+            self.train_tfrecords = self.val_tfrecords = self.test_tfrecords = None
 
 
 def build_model(args):
@@ -264,7 +263,7 @@ if __name__ == "__main__":
     # setting up args for training (supports wandb sweep for distributed hparams tuning)
     args = TrainingArgs()
     wandb.init(project=args.project_name, config=asdict(args))
-    args.ckpt_path = os.path.join(args.ckpt_path + f"-{wandb.run.id}")
+    args.ckpt_path = os.path.join(f"{args.ckpt_path}-{wandb.run.id}")
 
     # setting up seed for reproducible runs
     tf.random.set_seed(args.seed)

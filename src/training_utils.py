@@ -29,9 +29,9 @@ def fetch_callbacks(args, is_stage2=False):
     if is_stage2:
         scheduler = partial(scheduler, lr1=args.stage2_lr1, lr2=args.stage2_lr2, transition_epochs=args.stage2_transition_epochs)
         callbacks.append(tf.keras.callbacks.LearningRateScheduler(scheduler))
-        ckpt_path = args.ckpt_path + "_stage2/tf_model"
+        ckpt_path = f"{args.ckpt_path}_stage2/tf_model"
     else:
-        ckpt_path = args.ckpt_path + "_stage1/tf_model"
+        ckpt_path = f"{args.ckpt_path}_stage1/tf_model"
 
     logging_callback = LoggingCallback(args.logging_steps)
 
