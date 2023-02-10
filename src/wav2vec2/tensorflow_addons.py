@@ -160,12 +160,11 @@ class GroupNormalization(tf.keras.layers.Layer):
         normalized_inputs = self._apply_normalization(reshaped_inputs, input_shape)
 
         is_instance_norm = (input_shape[self.axis] // self.groups) == 1
-        if not is_instance_norm:
-            outputs = tf.reshape(normalized_inputs, tensor_input_shape)
-        else:
-            outputs = normalized_inputs
-
-        return outputs
+        return (
+            normalized_inputs
+            if is_instance_norm
+            else tf.reshape(normalized_inputs, tensor_input_shape)
+        )
 
     def get_config(self):
         config = {
@@ -195,14 +194,13 @@ class GroupNormalization(tf.keras.layers.Layer):
 
         group_shape = [tensor_input_shape[i] for i in range(len(input_shape))]
         is_instance_norm = (input_shape[self.axis] // self.groups) == 1
-        if not is_instance_norm:
-            group_shape[self.axis] = input_shape[self.axis] // self.groups
-            group_shape.insert(self.axis, self.groups)
-            group_shape = tf.stack(group_shape)
-            reshaped_inputs = tf.reshape(inputs, group_shape)
-            return reshaped_inputs, group_shape
-        else:
+        if is_instance_norm:
             return inputs, group_shape
+        group_shape[self.axis] = input_shape[self.axis] // self.groups
+        group_shape.insert(self.axis, self.groups)
+        group_shape = tf.stack(group_shape)
+        reshaped_inputs = tf.reshape(inputs, group_shape)
+        return reshaped_inputs, group_shape
 
     def _apply_normalization(self, reshaped_inputs, input_shape):
 
@@ -220,7 +218,7 @@ class GroupNormalization(tf.keras.layers.Layer):
         )
 
         gamma, beta = self._get_reshaped_weights(input_shape)
-        normalized_inputs = tf.nn.batch_normalization(
+        return tf.nn.batch_normalization(
             reshaped_inputs,
             mean=mean,
             variance=variance,
@@ -228,26 +226,26 @@ class GroupNormalization(tf.keras.layers.Layer):
             offset=beta,
             variance_epsilon=self.epsilon,
         )
-        return normalized_inputs
 
     def _get_reshaped_weights(self, input_shape):
         broadcast_shape = self._create_broadcast_shape(input_shape)
-        gamma = None
-        beta = None
-        if self.scale:
-            gamma = tf.reshape(self.gamma, broadcast_shape)
-
-        if self.center:
-            beta = tf.reshape(self.beta, broadcast_shape)
+        gamma = tf.reshape(self.gamma, broadcast_shape) if self.scale else None
+        beta = tf.reshape(self.beta, broadcast_shape) if self.center else None
         return gamma, beta
 
     def _check_if_input_shape_is_none(self, input_shape):
         dim = input_shape[self.axis]
         if dim is None:
             raise ValueError(
-                "Axis " + str(self.axis) + " of "
-                "input tensor should have a defined dimension "
-                "but the layer received an input with shape " + str(input_shape) + "."
+                (
+                    (
+                        f"Axis {str(self.axis)}" + " of "
+                        "input tensor should have a defined dimension "
+                        "but the layer received an input with shape "
+                    )
+                    + str(input_shape)
+                    + "."
+                )
             )
 
     def _set_number_of_groups_for_instance_norm(self, input_shape):
@@ -261,14 +259,26 @@ class GroupNormalization(tf.keras.layers.Layer):
         dim = input_shape[self.axis]
         if dim < self.groups:
             raise ValueError(
-                "Number of groups (" + str(self.groups) + ") cannot be "
-                "more than the number of channels (" + str(dim) + ")."
+                (
+                    (
+                        f"Number of groups ({str(self.groups)}" + ") cannot be "
+                        "more than the number of channels ("
+                    )
+                    + str(dim)
+                    + ")."
+                )
             )
 
         if dim % self.groups != 0:
             raise ValueError(
-                "Number of groups (" + str(self.groups) + ") must be a "
-                "multiple of the number of channels (" + str(dim) + ")."
+                (
+                    (
+                        f"Number of groups ({str(self.groups)}" + ") must be a "
+                        "multiple of the number of channels ("
+                    )
+                    + str(dim)
+                    + ")."
+                )
             )
 
     def _check_axis(self):

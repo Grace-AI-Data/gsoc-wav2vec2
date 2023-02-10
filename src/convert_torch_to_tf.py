@@ -79,10 +79,7 @@ def get_tf_pretrained_model(
     hf_state_dict = hf_model.state_dict()
 
     tf_variables = tf_model.variables
-    tf_variables_dict = {}
-    for v in tf_variables:
-        tf_variables_dict[v.name] = v
-
+    tf_variables_dict = {v.name: v for v in tf_variables}
     tf_weights = []
     extra_keys = []
     for k in tqdm(hf_state_dict, desc="hf -> tf"):
@@ -150,7 +147,7 @@ if __name__ == "__main__":
 
     args = get_parser().parse_args()
 
-    config = Wav2Vec2Config() if not args.is_robust else RobustWav2Vec2Config()
+    config = RobustWav2Vec2Config() if args.is_robust else Wav2Vec2Config()
     tf_model, _ = get_tf_pretrained_model(
         config, args.hf_model_id, verbose=True, with_lm_head=args.with_lm_head
     )

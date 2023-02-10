@@ -63,9 +63,8 @@ class Wav2Vec2Processor:
             input_values = [
                 self.token_to_id_mapping.get(k, self.unk_id) for k in input_values
             ]
-        else:
-            if self.do_normalize:
-                input_values = self._normalize(input_values)
+        elif self.do_normalize:
+            input_values = self._normalize(input_values)
         return input_values
 
     def decode(self, input_ids: list, skip_special_tokens=True, group_tokens=True):

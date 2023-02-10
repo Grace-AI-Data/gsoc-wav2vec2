@@ -24,9 +24,11 @@ def requires_lib(test_case, lib: list):
         "transformers": is_transformers_available(),
     }
     conditions = [mapping[k] for k in lib]
-    if not all(conditions):
-        return unittest.skip(f"{lib} NOT AVAILABLE")(test_case)
-    return test_case
+    return (
+        test_case
+        if all(conditions)
+        else unittest.skip(f"{lib} NOT AVAILABLE")(test_case)
+    )
 
 
 def try_download_file(url: str):
@@ -43,6 +45,8 @@ def try_download_file(url: str):
 
 
 def if_path_exists(test_case, path: str):
-    if not any([os.path.isfile(path), os.path.isdir(path)]):
-        return unittest.skip(f"{path} doesn't exist")(test_case)
-    return test_case
+    return (
+        test_case
+        if any([os.path.isfile(path), os.path.isdir(path)])
+        else unittest.skip(f"{path} doesn't exist")(test_case)
+    )
